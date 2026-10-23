@@ -537,27 +537,18 @@ class Finding:
 
         lines = []
         if p == "hackerone":
-            lines.append(f"# {title}\n")
-            lines.append(f"**Severity:** {self.severity} | CVSS {self.cvss_score} | `{self.cvss_vector}`\n")
-            if self.url:
-                lines.append(f"**Target:** `{self.url}`\n")
-            lines.append("## Summary\n")
-            lines.append((self.summary or "Vulnerability found.") + "\n")
-            lines.append("## Steps to Reproduce\n")
-            lines.append(steps + "\n")
-            if self.poc_curl or self.poc_request:
-                lines.append("## PoC\n")
-                if self.poc_curl:
-                    lines.append("```bash\n" + self.poc_curl.strip() + "\n```\n")
-                if self.poc_request:
-                    lines.append("```http\n" + self.poc_request.strip() + "\n```\n")
-                if self.poc_response:
-                    lines.append("```http\n" + self.poc_response.strip() + "\n```\n")
-            lines.append("## Impact\n")
-            lines.append(impact + "\n")
+            lines.append(f"# {title}")
+            lines.append(f"**{self.severity}** · CVSS {self.cvss_score} · `{self.cvss_vector}`" + (f" · `{self.url}`" if self.url else ""))
+            lines.append("")
+            lines.append(f"**Summary:** {self.summary or 'Vulnerability found.'}")
+            lines.append(f"**Steps:** {steps.replace(chr(10), ' ')}")
+            if self.poc_curl:
+                lines.append(f"**PoC:** `{self.poc_curl.strip()}`")
+            elif self.poc_request:
+                lines.append(f"**PoC:** `{self.poc_request.strip().replace(chr(10), ' | ')}`")
+            lines.append(f"**Impact:** {impact}")
             if self.remediation:
-                lines.append("## Fix\n")
-                lines.append(remediation + "\n")
+                lines.append(f"**Fix:** {remediation}")
         elif p == "bugcrowd":
             lines.append(f"# {title}\n")
             lines.append("## Target\n")
