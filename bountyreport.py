@@ -212,8 +212,7 @@ VULNS: Dict[str, dict] = {
         "name": "Cross-Site Scripting (XSS)",
         "title": "Reflected XSS in {param} parameter on {endpoint}",
         "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
-        "impact": ("An attacker can execute arbitrary JavaScript in a victim's browser, leading to "
-                   "session hijacking, credential theft, phishing, or actions performed on behalf of the user."),
+        "impact": "Arbitrary JS execution in victim browser -> session hijack, credential theft, phishing.",
         "remediation": ("Context-aware output encoding, strict Content-Security-Policy, input validation, "
                         "and use of safe templating APIs. Avoid reflecting user input unencoded."),
         "steps": ("1. Navigate to {url}\n2. Inject payload: {payload}\n3. Observe script execution in browser.\n"
@@ -233,10 +232,8 @@ VULNS: Dict[str, dict] = {
         "name": "Insecure Direct Object Reference (IDOR)",
         "title": "IDOR allows access to other users' {object} via {param}",
         "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N",
-        "impact": ("Unauthorized read/modification of other users' data, leading to privacy breach and "
-                   "potential account takeover or data manipulation."),
-        "remediation": ("Enforce object-level authorization checks on every request; use indirect references; "
-                        "validate ownership server-side."),
+        "impact": "Read/modify other users' data -> privacy breach, possible ATO.",
+        "remediation": "Enforce object-level authz server-side; validate ownership.",
         "steps": ("1. Authenticate as User A, capture request to {endpoint}.\n"
                   "2. Change {param} to User B's identifier.\n3. Observe User B's data returned without authorization."),
     },
@@ -244,10 +241,8 @@ VULNS: Dict[str, dict] = {
         "name": "Server-Side Request Forgery (SSRF)",
         "title": "SSRF via {param} parameter allows internal network access",
         "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:L/A:N",
-        "impact": ("Attacker can make the server issue requests to internal services, cloud metadata, "
-                   "or localhost, potentially leaking credentials or pivoting into internal network."),
-        "remediation": ("Strict allowlist of destinations, block private IP ranges and metadata IPs, "
-                        "disable unnecessary URL schemes, use a hardened HTTP client."),
+        "impact": "Server fetches internal/cloud metadata -> credential leak, internal pivot.",
+        "remediation": "Allowlist destinations; block private/meta IPs; disable risky schemes.",
         "steps": ("1. Send request with {param}=http://169.254.169.254/latest/meta-data/\n"
                   "2. Observe metadata response.\n3. Demonstrate internal port scanning / data exfil."),
     },
@@ -255,8 +250,8 @@ VULNS: Dict[str, dict] = {
         "name": "SQL Injection",
         "title": "SQL injection in {param} parameter on {endpoint}",
         "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-        "impact": "Full database compromise: data exfiltration, authentication bypass, and possible RCE.",
-        "remediation": "Parameterized queries / prepared statements, ORM, least-privilege DB account, WAF as defense-in-depth.",
+        "impact": "Full DB compromise: data dump, auth bypass, possible RCE.",
+        "remediation": "Parameterized queries; least-priv DB account.",
         "steps": "1. Send payload {payload} in {param}.\n2. Observe SQL error / boolean difference / time delay.\n3. Extract data via sqlmap or manual.",
         "payload": "' OR '1'='1",
     },
@@ -264,8 +259,8 @@ VULNS: Dict[str, dict] = {
         "name": "Remote Code Execution (RCE)",
         "title": "RCE via {vector} on {endpoint}",
         "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-        "impact": "Full server compromise; attacker can run arbitrary commands, pivot, and exfiltrate data.",
-        "remediation": "Avoid eval/exec, sanitize inputs, sandbox, patch dependencies, principle of least privilege.",
+        "impact": "Full server compromise -> arbitrary commands, pivot, data exfil.",
+        "remediation": "Avoid eval/exec; sanitize input; least privilege.",
         "steps": "1. Trigger {vector} with payload {payload}.\n2. Confirm command output in response.\n3. Demonstrate safe PoC (id/hostname).",
         "payload": "; id",
     },
@@ -543,29 +538,26 @@ class Finding:
         lines = []
         if p == "hackerone":
             lines.append(f"# {title}\n")
-            lines.append("## Summary\n")
-            lines.append(self.summary or "_Describe the vulnerability and where it occurs._\n")
-            lines.append("## Severity\n")
-            lines.append(f"**{self.severity}** — CVSS 3.1: `{self.cvss_vector}` (Score: {self.cvss_score})\n")
-            lines.append("## Steps to Reproduce\n")
-            lines.append(steps + "\n")
+            lines.append(f"**Severity:** {self.severity} | CVSS {self.cvss_score} | `{self.cvss_vector}`\n")
             if self.url:
                 lines.append(f"**Target:** `{self.url}`\n")
-            if self.poc_request:
-                lines.append("## Proof of Concept\n")
-                lines.append("**Request:**\n```http\n" + self.poc_request.strip() + "\n```\n")
-            if self.poc_response:
-                lines.append("**Response:**\n```http\n" + self.poc_response.strip() + "\n```\n")
-            if self.poc_curl:
-                lines.append("**curl:**\n```bash\n" + self.poc_curl.strip() + "\n```\n")
+            lines.append("## Summary\n")
+            lines.append((self.summary or "Vulnerability found.") + "\n")
+            lines.append("## Steps to Reproduce\n")
+            lines.append(steps + "\n")
+            if self.poc_curl or self.poc_request:
+                lines.append("## PoC\n")
+                if self.poc_curl:
+                    lines.append("```bash\n" + self.poc_curl.strip() + "\n```\n")
+                if self.poc_request:
+                    lines.append("```http\n" + self.poc_request.strip() + "\n```\n")
+                if self.poc_response:
+                    lines.append("```http\n" + self.poc_response.strip() + "\n```\n")
             lines.append("## Impact\n")
             lines.append(impact + "\n")
             if self.remediation:
-                lines.append("## Suggested Fix\n")
+                lines.append("## Fix\n")
                 lines.append(remediation + "\n")
-            if self.references:
-                lines.append("## References\n")
-                lines.append(self.references + "\n")
         elif p == "bugcrowd":
             lines.append(f"# {title}\n")
             lines.append("## Target\n")
