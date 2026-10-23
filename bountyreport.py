@@ -1,30 +1,10 @@
 #!/usr/bin/env python3
-"""
-╔══════════════════════════════════════════════════════════════╗
-║  BountyReport — Bug Bounty Submission Report Generator       ║
-║  Zero dependencies. Pure Python. Built for hunters.         ║
-╚══════════════════════════════════════════════════════════════╝
+# bountyreport.py - quick report generator for bug bounty submissions
+# author: venu
+# TODO: pdf export, screenshot embedding
+# FIXME: cvss rounding edge cases on some vectors
 
-Features:
-  • Interactive wizard for building submission-ready reports
-  • CVSS 3.1 base score calculator (vector string in/out)
-  • Vulnerability templates (XSS, IDOR, SSRF, SQLi, RCE, ...)
-  • Platform formats: HackerOne, Bugcrowd, Intigriti, YesWeHack, Generic
-  • JSON file input for automation / CI
-  • Multi-finding report support
-  • PoC scaffolding (HTTP request/response, curl, steps)
-  • Severity auto-rating from CVSS
-
-Usage:
-  python3 bountyreport.py                      Interactive wizard
-  python3 bountyreport.py --file finding.json  From JSON
-  python3 bountyreport.py --cvss "AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
-  python3 bountyreport.py --list-vulns
-  python3 bountyreport.py --list-platforms
-  python3 bountyreport.py -t xss -p hackerone --quick
-
-Author: Built for bug bounty hunters 🎯
-"""
+# note: zero deps on purpose, stdlib only
 
 import os
 import sys
@@ -61,11 +41,7 @@ if not sys.stdout.isatty():
 
 
 def banner():
-    print(f"""{C.CYAN}{C.BOLD}
-╔══════════════════════════════════════════════════════════════╗
-║  BountyReport — Bug Bounty Submission Report Generator       ║
-║  Zero deps · Pure Python · Built for hunters 🎯              ║
-╚══════════════════════════════════════════════════════════════╝{C.RESET}""")
+    print(f"{C.CYAN}{C.BOLD}bountyreport{C.RESET}  {C.DIM}- bug bounty report generator{C.RESET}")
 
 
 def section(title):
@@ -104,7 +80,7 @@ def ask_multiline(prompt):
 
 def found(msg, detail="", good=True):
     color = C.GREEN if good else C.RED
-    print(f"  {color}✓{C.RESET} {msg}" + (f" {C.DIM}{detail}{C.RESET}" if detail else ""))
+    print(f"  {color}+{C.RESET} {msg}" + (f" {C.DIM}{detail}{C.RESET}" if detail else ""))
 
 
 # ============================================================
@@ -155,7 +131,8 @@ def parse_cvss_vector(vec: str) -> Optional[Dict[str, str]]:
 
 
 def cvss_base_score(vec: str) -> Tuple[float, str]:
-    """Return (score, normalized_vector_string)."""
+    # returns (score, normalized vector). rounding uses ceil per FIRST spec
+    # TODO: double check scope-changed formula against NVD calc
     m = parse_cvss_vector(vec)
     if not m:
         raise ValueError("Invalid CVSS vector")
@@ -820,7 +797,7 @@ def main():
     path = write_report([f], args.output, args.out)
     print()
     found("Report saved", path, True)
-    print(f"  {C.DIM}Open it, fill placeholders, submit. Good luck! 🎯{C.RESET}")
+    print(f"  {C.DIM}open it, fill placeholders, submit.{C.RESET}")
 
 
 if __name__ == "__main__":
